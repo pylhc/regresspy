@@ -1,9 +1,9 @@
-from __future__ import print_function
 import os
 import re
 import shutil
 
 # Directories comparators #####################################################
+
 
 def compare_dirs(dir1, dir2, ignore=None, function=None):
     """Test if directories are equal.
@@ -23,12 +23,12 @@ def compare_dirs(dir1, dir2, ignore=None, function=None):
     try:
         childs1 = os.listdir(dir1)
     except os.error:
-        print("Cannot read dir {}".format(dir1))
+        print(f"Cannot read dir {dir1}")
         return False
     try:
         childs2 = os.listdir(dir2)
     except os.error:
-        print("Cannot read dir {}".format(dir1))
+        print(f"Cannot read dir {dir2}")
         return False
     if ignore:
         childs1 = _regexs_filter(childs1, ignore)
@@ -36,12 +36,7 @@ def compare_dirs(dir1, dir2, ignore=None, function=None):
     in_1_not_in_2 = [name for name in childs1 if name not in childs2]
     in_2_not_in_1 = [name for name in childs2 if name not in childs1]
     if in_1_not_in_2 or in_2_not_in_1:
-        print(
-            ("Non-common elements found: In {dir1}: {in_1_not_in_2}, "
-             "in {dir2}: {in_2_not_in_1}").format(
-                 dir1=dir1, dir2=dir2,
-                 in_1_not_in_2=in_1_not_in_2, in_2_not_in_1=in_2_not_in_1)
-        )
+        print(f"Non-common elements found: In {dir1}: {in_1_not_in_2}, in {dir2}: {in_2_not_in_1}")
         return False
     result = True
     common_names = childs1
@@ -53,8 +48,7 @@ def compare_dirs(dir1, dir2, ignore=None, function=None):
         elif os.path.isdir(full_path1) and os.path.isdir(full_path2):
             result &= compare_dirs(full_path1, full_path2, ignore=ignore)
         else:
-            print("{fp1} and {fp2} are of different type!"
-                  .format(fp1=full_path1, fp2=full_path2))
+            print(f"{full_path1} and {full_path2} are of different type!")
             result = False
     return result
 
@@ -147,4 +141,4 @@ def copy_item(src_item, dest):
 
 
 def _report_files_differ(file1, file2):
-    print("Files {f1} and {f2} differ.".format(f1=file1, f2=file2))
+    print(f"Files {file1} and {file2} differ.")

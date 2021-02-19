@@ -29,7 +29,8 @@ with README.open("r") as docs:
 
 
 # Dependencies for the package itself
-DEPENDENCIES = [
+DEPENDENCIES = ['GitPython>=3.0.8',
+                'PyYAML>=5.2'
 ]
 
 # Extra dependencies

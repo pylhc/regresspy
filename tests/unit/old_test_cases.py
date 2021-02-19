@@ -2,14 +2,8 @@ import os
 import filecmp
 import argparse
 from os.path import join, abspath, dirname, pardir
-import compare_utils
-import regression
+from regresspy import compare_utils, regression
 
-# ignore numpy warnings, see:
-# https://stackoverflow.com/questions/40845304/runtimewarning-numpy-dtype-size-changed-may-indicate-binary-incompatibility
-import warnings
-warnings.filterwarnings("ignore", message="numpy.dtype size changed")
-warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
 ABS_ROOT = abspath(join(dirname(__file__), pardir, pardir))
 
@@ -23,13 +17,8 @@ GETLLM_FILES = join("tests", "inputs", "getllm_results")
 
 def _parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--keepfiles",
-        help="Keep output files if test fails.",
-        dest="keepfiles",
-        action="store_true",
-    )
-    
+    parser.add_argument("--keepfiles", dest="keepfiles", action="store_true",
+                        help="Keep output files if test fails.",)
     return parser.parse_args()
 
 

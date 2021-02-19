@@ -5,7 +5,7 @@ import time
 import traceback
 import tempfile
 import shutil
-from cStringIO import StringIO
+from io import StringIO
 from collections import namedtuple
 import re
 import git
@@ -39,9 +39,7 @@ class TestCase(namedtuple(
     __slots__ = ()  # This makes the class lightweight and immutable.
 
 
-def launch_test_set(test_cases, repo_path,
-                    yaml_conf=None, tag_regexp=None,
-                    keep_fails=False):
+def launch_test_set(test_cases, repo_path, yaml_conf=None, tag_regexp=None, keep_fails=False):
     """
     """
     _print_sep("Test session starts")
@@ -50,12 +48,10 @@ def launch_test_set(test_cases, repo_path,
     try:
         with Timer() as regression_timer:
             new_repo_path = tempfile.mkdtemp()
-            print("Cloning repository into {}".format(new_repo_path))
+            print(f"Cloning repository into {new_repo_path}")
             clone_revision(repo_path, commit_hexsha, new_repo_path)
-            result = find_regressions(test_cases, new_repo_path, repo_path,
-                                      keep_fails=keep_fails)
-        _print_sep("Regression finished in {:.2f}s"
-                   .format(regression_timer.get_duration()))
+            result = find_regressions(test_cases, new_repo_path, repo_path, keep_fails=keep_fails)
+        _print_sep(f"Regression finished in {regression_timer.get_duration():.2f}s")
     finally:
         # Remove if dont want to keep fails or the tests succeeded.
         if not keep_fails or result:
@@ -82,7 +78,7 @@ def find_regressions(test_cases, valid_path, test_path, keep_fails=False):
     summary = "Testing...: "
     sys.stdout.flush()
     for test_case in test_cases:
-        _print_over_current_line("{} (running: '{}')".format(summary, test_case.name))
+        _print_over_current_line(f"{summary} (running: '{test_case.name}')")
         result = run_test_case(test_case, valid_path, test_path,
                                keep_fails=keep_fails)
         results.append(result)
@@ -126,10 +122,9 @@ def run_test_case(test_case, valid_path, test_path, keep_fails=False):
                         valid_outpath, test_outpath, test_timer.get_duration())
 
     if keep_fails and not result.is_success:
-        print ("")
-        print ("Test failed, keeping output files: ")
-        print ("  	valid_outpath = < %s > " % valid_outpath)
-        print ("  	test_outpath  = < %s > " % test_outpath)
+        print("Test failed, keeping output files: ")
+        print(f"    valid_outpath = < {valid_outpath} > ")
+        print(f"    test_outpath  = < {test_outpath} > ")
     else:
         _remove_if_exists(valid_outpath)
         _remove_if_exists(test_outpath)
@@ -169,14 +164,12 @@ def _find_commit(repo, yaml_conf, tag_regexp):
         raise TestError("Only one of yaml_conf or tag_regexp is allowed.")
     if yaml_conf:
         commit = commit_from_yaml(repo, yaml_conf)
-        print("Testing against commit: {commit.summary} ({commit.hexsha})"
-              .format(commit=commit))
+        print(f"Testing against commit: {commit.summary} ({commit.hexsha})")
         return commit.hexsha
     if tag_regexp:
         test_tag = find_tag(repo, tag_regexp)
-        print("Testing against tag \"{tag}\":\n"
-              "    -> {tag.commit.summary} ({tag.commit.hexsha})"
-              .format(tag=test_tag))
+        print(f"Testing against tag \"{test_tag}\":\n    -> "
+              f"{test_tag.commit.summary} ({test_tag.commit.hexsha})")
         return test_tag.commit.hexsha
     raise TestError("No yaml_conf or tag_regexp given.")
 
@@ -194,13 +187,11 @@ def find_tag(repo, tag_regexp):
     """
     repo = _force_repo(repo)
     matcher = re.compile(tag_regexp)
-    ordered_tags = sorted(repo.tags,
-                          key=lambda tag: tag.commit.committed_datetime,
-                          reverse=True)
+    ordered_tags = sorted(repo.tags, key=lambda tag: tag.commit.committed_datetime, reverse=True)
     for tag in ordered_tags:
         if matcher.findall(tag.name):
             return tag
-    raise TestError("Can't find a tag that matches {}".format(tag_regexp))
+    raise TestError(f"Can't find a tag that matches {tag_regexp}")
 
 
 def commit_from_yaml(repo, yaml_conf):
@@ -226,10 +217,7 @@ def commit_from_yaml(repo, yaml_conf):
     try:
         strhash = yaml_data["regression"]["ref_commit"]
     except KeyError:
-        raise TestError(
-            "Unable to find 'ref_commit' under 'regression' in file {}"
-            .format(yaml_conf)
-        )
+        raise TestError(f"Unable to find 'ref_commit' under 'regression' in file {yaml_conf}")
     commit = repo.commit(strhash)
     return commit
 
@@ -277,7 +265,7 @@ class TestResult(object):
     def get_full_summary(self):
         """Returns a full summary of this tests result.
         """
-        report = "-> Test {}: ".format(self.test_case.name)
+        report = f"-> Test {self.test_case.name}: "
         if self.is_exception:
             report += "errored\n"
             if self._compare_error:
@@ -286,22 +274,22 @@ class TestResult(object):
                 for name, run_res in (("Valid", self.valid_result),
                                       ("Test", self.test_result)):
                     if run_res.raised:
-                        report += "{} case execution failed.\n".format(name)
+                        report += f"{name} case execution failed.\n"
                         if run_res.stdout != "":
-                            report += "Standard output:\n{}\n".format(run_res.stdout)
+                            report += f"Standard output:\n{run_res.stdout}\n"
                         if run_res.stderr != "":
-                            report += "Error output:\n{}\n".format(run_res.stderr)
+                            report += f"Error output:\n{run_res.stderr}\n"
                         break
         elif self.is_regression:
             report += "failed, differences found.\n"
             if self._compare_stdout != "":
-                report += "Standard output:\n{}\n".format(self._compare_stdout)
+                report += f"Standard output:\n{self._compare_stdout}\n"
             if self._compare_stderr != "":
-                report += "Error output:\n{}\n".format(self._compare_stderr)
+                report += f"Error output:\n{self._compare_stderr}\n"
         else:
             report += "succeeded"
             if self.duration is not None:
-                report += " ({:.2f}s)".format(self.duration)
+                report += f" ({self.duration:.2f}s)"
             report += "\n"
         report += "\n"
         return report
@@ -313,10 +301,7 @@ class TestResult(object):
         try:
             sys.stdout = mystdout = StringIO()
             sys.stderr = mystderr = StringIO()
-            compare_res = not self.test_case.test_function(
-                self.valid_output,
-                self.test_output,
-            )
+            compare_res = not self.test_case.test_function(self.valid_output, self.test_output,)
             self._compare_stdout = mystdout.getvalue()
             self._compare_stderr = mystderr.getvalue()
         # User provided function, I can't know what will raise...
@@ -367,12 +352,12 @@ def _print_sep(text=None, length=80):
     else:
         left_len = (length - len(text) - 2)/2
         right_len = length - left_len - len(text) - 2
-        print("=" * left_len + " " + text + " " + "=" * right_len)
+        print("=" * int(left_len) + " " + text + " " + "=" * int(right_len))
 
 
 def _print_over_current_line(text):
-    print("\r" + " " * 200, end="")  # clear line
-    print("\r{}".format(text), end="")
+    print(f"\r{' ' * 200}", end="")  # clear line
+    print(f"\r{text}", end="")
     sys.stdout.flush()
 
 
